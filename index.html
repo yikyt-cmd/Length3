@@ -369,11 +369,28 @@
       background: #FEF3C7;
       border: 3px solid #FDE68A;
       color: #B45309;
-      font-size: 1.2rem;
+      font-size: clamp(0.9rem, 1.2vw, 1.2rem);
       font-weight: 900;
-      padding: 6px 20px;
+      padding: 6px clamp(8px, 1vw, 20px);
       border-radius: 30px;
       pointer-events: none;
+      flex: 1;
+      min-width: 0;
+      text-align: center;
+    }
+
+    .measure-mode-btn {
+      flex-shrink: 0;
+      background: #7C3AED;
+      color: #FFFFFF;
+      border: 3px solid #5B21B6;
+      padding: 8px 14px;
+      font-size: 1rem;
+      font-weight: 900;
+      border-radius: 30px;
+      cursor: pointer;
+      box-shadow: 0 4px 0 #4C1D95;
+      white-space: nowrap;
     }
 
     .mini-reset-btn {
@@ -426,6 +443,93 @@
       align-items: center;
       padding: 8px 0;
       position: relative;
+    }
+
+    .tape-arena-fullpage.measure-mode {
+      flex-direction: column;
+      align-items: stretch;
+      justify-content: flex-start;
+    }
+
+    .measure-item-area {
+      display: none;
+      flex: 1 1 0;
+      min-height: 120px;
+      width: 100%;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .tape-arena-fullpage.measure-mode .measure-item-area {
+      display: block;
+    }
+
+    .tape-arena-fullpage.measure-mode .tape-rail-fullpage {
+      flex: 0 0 175px;
+    }
+
+    .measure-item-window {
+      position: absolute;
+      left: 6px;
+      bottom: 0;
+      overflow: hidden;
+      z-index: 1;
+    }
+
+    .measure-item-window img {
+      position: absolute;
+      max-width: none;
+      max-height: none;
+      pointer-events: none;
+    }
+
+    .measure-guide {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      background: #0F172A;
+      border-radius: 2px;
+      box-shadow: 0 0 0 2px rgba(255,255,255,0.65);
+      z-index: 2;
+      transition: left 0.2s ease-out;
+      pointer-events: none;
+    }
+
+    .measure-success-feedback {
+      display: none;
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      z-index: 3;
+      background: #059669;
+      color: #FFFFFF;
+      border: 3px solid #A7F3D0;
+      border-radius: 24px;
+      padding: 8px 18px;
+      font-size: 1.5rem;
+      font-weight: 900;
+      box-shadow: 0 6px 16px rgba(5, 150, 105, 0.35);
+    }
+
+    .tape-arena-fullpage.measurement-complete .measure-success-feedback {
+      display: flex;
+      animation: measureFeedbackPop 0.45s ease-out;
+    }
+
+    .tape-arena-fullpage.measurement-complete .measure-item-window {
+      animation: measureItemCelebrate 0.65s ease-in-out 2;
+    }
+
+    @keyframes measureFeedbackPop {
+      0% { transform: scale(0.5); opacity: 0; }
+      75% { transform: scale(1.12); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    @keyframes measureItemCelebrate {
+      0%, 100% { filter: drop-shadow(0 0 0 rgba(16, 185, 129, 0)); }
+      50% { filter: drop-shadow(0 0 18px rgba(16, 185, 129, 0.9)); }
     }
 
     .tape-rail-fullpage {
@@ -806,7 +910,8 @@
   <section class="stage-container" id="modulePull">
     <div class="pull-fullscreen-stage" id="pullAnywhereStage">
       <div class="pull-top-bar">
-        <div class="pull-hint-pill">👉 按螢幕、兩/三隻手指拍按，或向右撥動拉長尺子！</div>
+        <div class="pull-hint-pill" id="rulerHintText">👉 按螢幕、兩/三隻手指拍按，或向右撥動拉長尺子！</div>
+        <button class="measure-mode-btn" id="rulerModeButton" onclick="toggleRulerMode(event)">📦 量度物品</button>
         <button class="mini-reset-btn" onclick="resetRuler(event)" onmouseover="playHoverTick()">
           🔄 重設
         </button>
@@ -820,6 +925,13 @@
 
       <!-- 全頁拉尺本體：平均 20 格平分滿版至最右端 -->
       <div class="tape-arena-fullpage" id="tapeArena">
+        <div class="measure-item-area" id="measureItemArea">
+          <div class="measure-item-window" id="measureItemWindow">
+            <img id="measureTargetImage" alt="">
+          </div>
+          <div class="measure-guide" id="measureGuide"></div>
+          <div class="measure-success-feedback" id="measureFeedback" role="status">✨ 量好了！</div>
+        </div>
         <div class="tape-rail-fullpage" id="tapeRailFullpage">
           <!-- 底部 20 格參考格線 -->
           <div class="ruler-background-grid" id="bgGrid"></div>
@@ -831,7 +943,7 @@
         </div>
       </div>
 
-      <div style="font-size: 1.2rem; font-weight: 900; color: #B45309;">
+      <div id="rulerFooterHint" style="font-size: 1.2rem; font-weight: 900; color: #B45309;">
         ✨ 共有 20 格平均分配！支援單指、兩指、三指按或撥動，一路拉到最右邊！
       </div>
     </div>
@@ -1145,6 +1257,26 @@
       }
     ];
 
+    // Opaque object bounds exclude transparent padding so the ruler endpoint matches the visible item.
+    const measurementObjectBounds = {
+      "MathDel-01_l.png": [0, 396, 1580, 343],
+      "MathDel-02_s.png": [0, 499, 863, 245],
+      "MathDel-03_l.png": [2, 490, 1891, 203],
+      "MathDel-04_s.png": [3, 504, 802, 184],
+      "MathDel-05_l.png": [0, 494, 1578, 177],
+      "MathDel-06_s.png": [8, 516, 771, 158],
+      "MathDel-07_l.png": [3, 494, 1739, 102],
+      "MathDel-08_s.png": [4, 508, 789, 101],
+      "MathDel-09_l.png": [12, 473, 1463, 161],
+      "MathDel-10_s.png": [16, 496, 755, 138],
+      "MathDel-11_l.png": [4, 504, 1501, 65],
+      "MathDel-12_s.png": [5, 521, 687, 65],
+      "MathDel-13_s.png": [4, 409, 729, 275],
+      "MathDel-14_l.png": [0, 376, 1484, 307],
+      "MathDel-15_s.png": [11, 470, 728, 137],
+      "MathDel-17_l.png": [10, 465, 1595, 186]
+    };
+
     function setExploreMode(mode) {
       exploreMode = mode;
       const arena = document.getElementById('compareArena');
@@ -1220,6 +1352,104 @@
     let hoverTimer = null;
     let touchStartX = 0;
     let touchStartY = 0;
+    let measurementModeActive = false;
+    let measurementTargetItem = null;
+    let measurementTargetLength = 0;
+    let measurementComplete = false;
+
+    function toggleRulerMode(e) {
+      if (e) e.stopPropagation();
+      if (hoverTimer) {
+        clearInterval(hoverTimer);
+        hoverTimer = null;
+      }
+
+      const arena = document.getElementById('tapeArena');
+      const modeButton = document.getElementById('rulerModeButton');
+      const hint = document.getElementById('rulerHintText');
+      const footerHint = document.getElementById('rulerFooterHint');
+      measurementModeActive = !measurementModeActive;
+      rulerLength = 1;
+      arena.classList.toggle('measure-mode', measurementModeActive);
+      arena.classList.remove('measurement-complete');
+
+      if (measurementModeActive) {
+        modeButton.textContent = '📏 自由拉尺';
+        hint.textContent = '👉 拉長尺子，讓黑線剛好到物品末端！';
+        footerHint.textContent = '📏 尺子最多 20 格；黑線到達物品末端就量好了！';
+        startRulerMeasurement();
+        speakCantonese("量度物品模式，拉長尺子");
+      } else {
+        measurementTargetItem = null;
+        modeButton.textContent = '📦 量度物品';
+        hint.textContent = '👉 按螢幕、兩/三隻手指拍按，或向右撥動拉長尺子！';
+        footerHint.textContent = '✨ 共有 20 格平均分配！支援單指、兩指、三指按或撥動，一路拉到最右邊！';
+        updateRuler();
+        speakCantonese("自由拉尺模式");
+      }
+    }
+
+    function startRulerMeasurement() {
+      const page = explorePages[Math.floor(Math.random() * explorePages.length)];
+      const item = Math.random() < 0.5 ? page.itemA : page.itemB;
+      if (!measurementObjectBounds[item.imgSrc]) {
+        throw new Error(`Missing measurement bounds for ${item.imgSrc}`);
+      }
+
+      measurementTargetItem = item;
+      measurementTargetLength = 5 + Math.floor(Math.random() * 11);
+      measurementComplete = false;
+
+      const image = document.getElementById('measureTargetImage');
+      image.alt = item.name;
+      image.onload = updateMeasurementLayout;
+      image.src = item.imgSrc;
+      updateRuler();
+      updateMeasurementLayout();
+    }
+
+    function updateMeasurementLayout() {
+      if (!measurementModeActive || !measurementTargetItem) return;
+
+      const image = document.getElementById('measureTargetImage');
+      const itemArea = document.getElementById('measureItemArea');
+      const itemWindow = document.getElementById('measureItemWindow');
+      const rail = document.getElementById('tapeRailFullpage');
+      const guide = document.getElementById('measureGuide');
+      if (!image.complete || !image.naturalWidth || !rail.clientWidth || !itemArea.clientWidth) return;
+
+      const [boundsLeft, boundsTop, boundsWidth, boundsHeight] = measurementObjectBounds[measurementTargetItem.imgSrc];
+      const rulerUnitWidth = rail.clientWidth / maxRulerLength;
+      const targetWidth = rulerUnitWidth * measurementTargetLength;
+      const imageScale = targetWidth / boundsWidth;
+      const railStart = rail.getBoundingClientRect().left - itemArea.getBoundingClientRect().left + rail.clientLeft;
+
+      itemWindow.style.left = `${railStart}px`;
+      itemWindow.style.width = `${targetWidth}px`;
+      itemWindow.style.height = `${boundsHeight * imageScale}px`;
+      image.style.width = `${image.naturalWidth * imageScale}px`;
+      image.style.height = `${image.naturalHeight * imageScale}px`;
+      image.style.left = `${-boundsLeft * imageScale}px`;
+      image.style.top = `${-boundsTop * imageScale}px`;
+
+      const guideEnd = railStart + rulerUnitWidth * rulerLength;
+      guide.style.left = `${guideEnd - guide.offsetWidth / 2}px`;
+    }
+
+    function completeRulerMeasurement() {
+      if (measurementComplete) return;
+      measurementComplete = true;
+      document.getElementById('tapeArena').classList.add('measurement-complete');
+      document.getElementById('measureFeedback').textContent = `✨ 量好了！${measurementTargetLength} 格`;
+      document.getElementById('rulerFooterHint').textContent =
+        `🎉 量好了！${measurementTargetItem.name}長 ${measurementTargetLength} 格！`;
+      if (hoverTimer) {
+        clearInterval(hoverTimer);
+        hoverTimer = null;
+      }
+      playDingLong();
+      speakCantonese("量好了");
+    }
 
     function renderRulerGridAndMarks() {
       const bgGrid = document.getElementById('bgGrid');
@@ -1251,9 +1481,23 @@
         marksContainer.style.width = rail.clientWidth + 'px';
       }
       document.getElementById('rulerDisplayNum').textContent = rulerLength;
+      updateMeasurementLayout();
     }
 
     function stepRuler() {
+      if (measurementModeActive) {
+        if (measurementComplete) return;
+        rulerLength++;
+        updateRuler();
+        playRulerStep(rulerLength);
+        if (rulerLength === measurementTargetLength) {
+          completeRulerMeasurement();
+        } else {
+          speakCantonese("再拉長");
+        }
+        return;
+      }
+
       if (rulerLength < maxRulerLength) {
         rulerLength++;
         updateRuler();
@@ -1271,7 +1515,7 @@
 
       stage.addEventListener('touchstart', (e) => {
         isTouchUser = true;
-        if (e.target.closest('.mini-reset-btn')) return;
+        if (e.target.closest('.mini-reset-btn, .measure-mode-btn')) return;
 
         if (e.touches.length >= 2) {
           e.preventDefault();
@@ -1284,7 +1528,7 @@
       }, { passive: false });
 
       stage.addEventListener('touchend', (e) => {
-        if (e.target.closest('.mini-reset-btn')) return;
+        if (e.target.closest('.mini-reset-btn, .measure-mode-btn')) return;
         if (e.changedTouches.length >= 2) return;
 
         const touchEndX = e.changedTouches[0].clientX;
@@ -1304,22 +1548,23 @@
 
       stage.addEventListener('click', (e) => {
         if (isTouchUser) return;
-        if (e.target.closest('.mini-reset-btn')) return;
+        if (e.target.closest('.mini-reset-btn, .measure-mode-btn')) return;
         stepRuler();
       });
 
       const arena = document.getElementById('tapeArena');
       if (arena) {
         arena.addEventListener('mouseenter', () => {
-          if (isTouchUser) return;
+          if (isTouchUser || (measurementModeActive && measurementComplete)) return;
           playHoverTick();
           if (hoverTimer) clearInterval(hoverTimer);
           stepRuler();
           hoverTimer = setInterval(() => {
-            if (rulerLength < maxRulerLength) {
+            if (measurementModeActive ? !measurementComplete : rulerLength < maxRulerLength) {
               stepRuler();
             } else {
               clearInterval(hoverTimer);
+              hoverTimer = null;
             }
           }, 850);
         });
@@ -1340,9 +1585,15 @@
         hoverTimer = null;
       }
       rulerLength = 1;
+      measurementComplete = false;
+      document.getElementById('tapeArena').classList.remove('measurement-complete');
+      if (measurementModeActive) {
+        document.getElementById('rulerFooterHint').textContent =
+          '📏 尺子最多 20 格；黑線到達物品末端就量好了！';
+      }
       updateRuler();
       playResetSound();
-      speakCantonese("縮返埋，由一開始！");
+      speakCantonese(measurementModeActive ? "重新量度，由一格開始！" : "縮返埋，由一開始！");
     }
 
     /* ==========================================
