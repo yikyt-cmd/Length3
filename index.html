@@ -867,7 +867,7 @@
         <div class="mode-toggle-group">
           <button class="mode-sub-btn active" id="btnModeStacked" onclick="setExploreMode('stacked')">上下對齊</button>
           <button class="mode-sub-btn" id="btnModeSide" onclick="setExploreMode('side-by-side')">左右兩邊</button>
-          <button class="mode-sub-btn" id="btnModeRandom" onclick="setExploreMode('random')" aria-label="左右隨機擺放">左右隨機</button>
+          <button class="mode-sub-btn" id="btnSwapItems" onclick="swapExploreItems()" aria-label="互換左右或上下的物件位置">互換</button>
         </div>
 
         <button class="page-nav-btn" onclick="prevExplorePage()" onmouseover="playHoverTick()">⬅️ 上一頁</button>
@@ -1156,6 +1156,7 @@
        ========================================== */
     let exploreMode = 'stacked';
     let currentExploreIndex = 0;
+    let exploreItemsSwapped = false;
     let displayedExploreItems;
 
     const explorePages = [
@@ -1282,25 +1283,26 @@
       const arena = document.getElementById('compareArena');
       document.getElementById('btnModeStacked').classList.toggle('active', mode === 'stacked');
       document.getElementById('btnModeSide').classList.toggle('active', mode === 'side-by-side');
-      document.getElementById('btnModeRandom').classList.toggle('active', mode === 'random');
 
       if (mode === 'stacked') {
         arena.className = 'comparison-arena mode-stacked';
         speakCantonese("上下對齊模式");
       } else {
         arena.className = 'comparison-arena mode-side-by-side';
-        if (mode === 'random') {
-          speakCantonese("左右隨機擺放模式");
-        } else {
-          speakCantonese("左右兩邊模式");
-        }
+        speakCantonese("左右兩邊模式");
       }
       renderExplorePage();
     }
 
+    function swapExploreItems() {
+      exploreItemsSwapped = !exploreItemsSwapped;
+      renderExplorePage();
+      speakCantonese("物件位置互換");
+    }
+
     function renderExplorePage() {
       const data = explorePages[currentExploreIndex];
-      const items = exploreMode === 'random' && Math.random() < 0.5
+      const items = exploreItemsSwapped
         ? [data.itemB, data.itemA]
         : [data.itemA, data.itemB];
       const [itemA, itemB] = items;
