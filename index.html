@@ -175,10 +175,10 @@
       position: absolute;
       top: 10px;
       bottom: 10px;
-      left: 175px;
-      width: 6px;
+      left: 174px;
+      width: 12px;
       background: #EF4444;
-      border-radius: 3px;
+      border-radius: 6px;
       z-index: 5;
     }
 
@@ -277,6 +277,10 @@
       height: min(15vw, 30vh, 320px);
       object-fit: cover;
       object-position: center;
+    }
+
+    .comparison-arena.mode-stacked .spoon-item-img {
+      height: min(22.5vw, 36vh, 360px);
     }
 
     .comparison-arena.mode-side-by-side .real-item-img {
@@ -1153,15 +1157,16 @@
 
     function renderExplorePage() {
       const data = explorePages[currentExploreIndex];
+      const imageClass = data.theme === "湯匙" ? "real-item-img spoon-item-img" : "real-item-img";
       document.getElementById('explorePageLabel').textContent = data.title;
 
       document.getElementById('nameA').textContent = data.itemA.name;
       document.getElementById('iconA').textContent = data.itemA.icon;
-      document.getElementById('graphicA').innerHTML = `<img src="${data.itemA.imgSrc}" class="real-item-img" alt="${data.itemA.name}">`;
+      document.getElementById('graphicA').innerHTML = `<img src="${data.itemA.imgSrc}" class="${imageClass}" alt="${data.itemA.name}">`;
 
       document.getElementById('nameB').textContent = data.itemB.name;
       document.getElementById('iconB').textContent = data.itemB.icon;
-      document.getElementById('graphicB').innerHTML = `<img src="${data.itemB.imgSrc}" class="real-item-img" alt="${data.itemB.name}">`;
+      document.getElementById('graphicB').innerHTML = `<img src="${data.itemB.imgSrc}" class="${imageClass}" alt="${data.itemB.name}">`;
     }
 
     function handleCardHover(target) {
