@@ -642,7 +642,7 @@
     .train-top-bar {
       width: 100%;
       display: flex;
-      justify-content: space-between;
+      justify-content: center;
       align-items: center;
       flex-shrink: 0;
     }
@@ -655,33 +655,6 @@
       font-weight: 900;
       padding: 6px 18px;
       border-radius: 30px;
-    }
-
-    .train-mode-selector {
-      display: flex;
-      gap: 6px;
-      background: #F1F5F9;
-      padding: 4px;
-      border-radius: 20px;
-      border: 2px solid #CBD5E1;
-      z-index: 50;
-    }
-
-    .train-mode-btn {
-      border: none;
-      background: transparent;
-      padding: 6px 14px;
-      border-radius: 16px;
-      font-size: 0.95rem;
-      font-weight: 900;
-      color: #475569;
-      cursor: pointer;
-    }
-
-    .train-mode-btn.active {
-      background: #059669;
-      color: #FFF;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
 
     .train-status-card {
@@ -921,14 +894,6 @@
     <div class="train-stage" id="trainStageContainer">
       <div class="train-top-bar">
         <div class="train-title-pill">🚂 按任何地方出發，尾卡對齊左邊！</div>
-        <div class="train-mode-selector" onclick="event.stopPropagation()">
-            <button class="train-mode-btn active" id="btnModeAuto" onclick="setTrainDriveMode('alternate')">🔀 長短交替</button>
-            <button class="train-mode-btn" id="btnModeShort" onclick="setTrainDriveMode('short')">📍 短火車</button>
-            <button class="train-mode-btn" id="btnModeLong" onclick="setTrainDriveMode('long')">🏁 長火車(10卡)</button>
-        </div>
-        <button class="mini-reset-btn" onclick="resetTrain(event)" onmouseover="playHoverTick()">
-          🔄 返起點
-        </button>
       </div>
 
       <!-- 火車播報看板 -->
@@ -1048,6 +1013,49 @@
     function playChugSound() {
       playTone(130, 'square', 0.07, 0.18);
       setTimeout(() => playTone(105, 'square', 0.07, 0.15), 150);
+    }
+
+    function playTrainDepartureSound(trainAsset) {
+      if (trainAsset.soundStyle === 'long') {
+        playTrainWhistle(true);
+        playTone(146.83, 'triangle', 0.7, 0.16);
+        setTimeout(() => playTone(196, 'sawtooth', 0.28, 0.12), 160);
+      } else if (trainAsset.soundStyle === 'modern') {
+        playTone(659.25, 'sine', 0.2, 0.15);
+        setTimeout(() => playTone(880, 'sine', 0.24, 0.15), 120);
+        setTimeout(() => playTone(1174.66, 'triangle', 0.3, 0.12), 240);
+        playTone(220, 'sawtooth', 0.5, 0.08);
+      } else {
+        playTrainWhistle(false);
+        playTone(174.61, 'triangle', 0.45, 0.14);
+        setTimeout(() => playTone(261.63, 'sawtooth', 0.22, 0.1), 190);
+      }
+    }
+
+    function playTrainMovementSound(trainAsset) {
+      if (trainAsset.soundStyle === 'long') {
+        playTone(105, 'square', 0.08, 0.15);
+        setTimeout(() => playTone(138.59, 'square', 0.08, 0.13), 90);
+      } else if (trainAsset.soundStyle === 'modern') {
+        playTone(220, 'sawtooth', 0.1, 0.12);
+        playTone(440, 'triangle', 0.12, 0.09);
+      } else {
+        playChugSound();
+        playTone(174.61, 'triangle', 0.12, 0.12);
+      }
+    }
+
+    function playTrainArrivalSound(trainAsset) {
+      if (trainAsset.soundStyle === 'long') {
+        playDingLong();
+        playTone(196, 'triangle', 0.3, 0.1);
+      } else if (trainAsset.soundStyle === 'modern') {
+        playDingShort();
+        setTimeout(() => playTone(880, 'sine', 0.22, 0.12), 100);
+      } else {
+        playTrainWhistle(false);
+        playTone(349.23, 'triangle', 0.25, 0.12);
+      }
     }
 
     /* ==========================================
@@ -1537,7 +1545,6 @@
     /* ==========================================
        6. 模組三：圖片火車先露出車頭，駛入後尾卡對齊起點再離開
        ========================================= */
-    let trainDriveMode = 'alternate';
     let nextTrainTarget = 'short';
     let isTrainMoving = false;
     let currentTrainAsset = null;
@@ -1552,6 +1559,7 @@
         src: 'train_10_cars (1).png',
         name: '長火車（10卡）',
         voice: '長火車',
+        soundStyle: 'long',
         cropTop: 529,
         cropHeight: 101,
         tailRight: 2672,
@@ -1562,6 +1570,7 @@
         src: 'train_1_car_modern.png',
         name: '短火車（現代款）',
         voice: '短火車',
+        soundStyle: 'modern',
         cropTop: 377,
         cropHeight: 425,
         tailRight: 2646,
@@ -1572,6 +1581,7 @@
         src: 'train_1_car_vintage.png',
         name: '短火車（復古款）',
         voice: '短火車',
+        soundStyle: 'vintage',
         cropTop: 324,
         cropHeight: 494,
         tailRight: 2665,
@@ -1591,8 +1601,7 @@
     }
 
     function chooseTrainAsset() {
-      const target = trainDriveMode === 'alternate' ? nextTrainTarget : trainDriveMode;
-      if (target === 'long') return trainAssets.long;
+      if (nextTrainTarget === 'long') return trainAssets.long;
       return Math.random() < 0.5 ? trainAssets.shortModern : trainAssets.shortVintage;
     }
 
@@ -1681,19 +1690,7 @@
       stopTrainSounds();
     }
 
-    function setTrainDriveMode(mode) {
-      if (isTrainMoving || !['alternate', 'short', 'long'].includes(mode)) return;
-      trainDriveMode = mode;
-      if (mode === 'alternate') nextTrainTarget = 'short';
-      document.getElementById('btnModeAuto').classList.toggle('active', mode === 'alternate');
-      document.getElementById('btnModeShort').classList.toggle('active', mode === 'short');
-      document.getElementById('btnModeLong').classList.toggle('active', mode === 'long');
-      prepareTrainForRun();
-      speakCantonese(mode === 'short' ? '短火車模式' : mode === 'long' ? '長火車模式' : '長短交替模式');
-    }
-
-    function handleTrainStageClick(e) {
-      if (e.target.closest('.mini-reset-btn') || e.target.closest('.train-mode-selector')) return;
+    function handleTrainStageClick() {
       triggerTrainMove();
     }
 
@@ -1705,18 +1702,15 @@
       const hint = document.getElementById('trainBottomHint');
       isTrainMoving = true;
       const cycleId = ++trainCycleId;
-      const longTrain = currentTrainAsset === trainAssets.long;
-      if (trainDriveMode === 'alternate') {
-        nextTrainTarget = nextTrainTarget === 'short' ? 'long' : 'short';
-      }
+      nextTrainTarget = nextTrainTarget === 'short' ? 'long' : 'short';
 
       train.style.transition = 'transform 2.6s cubic-bezier(0.25, 1, 0.5, 1)';
       train.style.transform = `translateX(${trainLayout.arrivalDistance}px)`;
       label.textContent = `${currentTrainAsset.name}出發！`;
       hint.textContent = '⏳ 火車行駛中，直到最後一卡對齊左邊起點線！';
-      playTrainWhistle(longTrain);
-      playChugSound();
-      trainChugInterval = setInterval(playChugSound, 280);
+      playTrainDepartureSound(currentTrainAsset);
+      playTrainMovementSound(currentTrainAsset);
+      trainChugInterval = setInterval(() => playTrainMovementSound(currentTrainAsset), 320);
 
       scheduleTrainStep(() => {
         stopTrainSounds();
@@ -1724,7 +1718,7 @@
         train.style.transform = `translateX(${trainLayout.arrivalDistance}px)`;
         label.textContent = `${currentTrainAsset.name}到達！`;
         hint.textContent = '✨ 尾卡已對齊左邊，停留 3 秒！';
-        playDingLong();
+        playTrainArrivalSound(currentTrainAsset);
         speakCantonese(currentTrainAsset.voice);
 
         scheduleTrainStep(() => {
