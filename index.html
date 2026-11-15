@@ -266,20 +266,17 @@
     }
 
     .real-item-img {
-      --object-height-scale: 1;
       flex: 0 0 auto;
       filter: drop-shadow(0 4px 10px rgba(0,0,0,0.3));
-      transform: scaleY(var(--object-height-scale));
       transition: transform 0.2s;
     }
 
     /* 圖檔物件最窄約佔原圖 76%，以下寬度確保長物件達到指定畫面比例。 */
     .comparison-arena.mode-stacked .real-item-img {
       width: 68vw;
-      height: 100%;
+      height: min(15vw, 30vh, 320px);
       object-fit: cover;
       object-position: center;
-      --object-height-scale: 0.72;
     }
 
     .comparison-arena.mode-side-by-side .real-item-img {
@@ -289,7 +286,7 @@
     }
 
     .item-card:hover .real-item-img {
-      transform: scale(1.04, var(--object-height-scale));
+      transform: scale(1.04);
     }
 
     .item-label-box {
