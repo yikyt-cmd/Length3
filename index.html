@@ -266,8 +266,10 @@
     }
 
     .real-item-img {
+      --object-height-scale: 1;
       flex: 0 0 auto;
       filter: drop-shadow(0 4px 10px rgba(0,0,0,0.3));
+      transform: scaleY(var(--object-height-scale));
       transition: transform 0.2s;
     }
 
@@ -277,6 +279,7 @@
       height: 100%;
       object-fit: cover;
       object-position: center;
+      --object-height-scale: 0.72;
     }
 
     .comparison-arena.mode-side-by-side .real-item-img {
@@ -286,7 +289,7 @@
     }
 
     .item-card:hover .real-item-img {
-      transform: scale(1.04);
+      transform: scale(1.04, var(--object-height-scale));
     }
 
     .item-label-box {
