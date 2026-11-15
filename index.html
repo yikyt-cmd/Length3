@@ -1349,9 +1349,18 @@
     let measurementTargetItem = null;
     let measurementTargetLength = 0;
     let measurementComplete = false;
+    let measurementNextQuestionTimer = null;
+
+    function cancelMeasurementNextQuestion() {
+      if (measurementNextQuestionTimer !== null) {
+        clearTimeout(measurementNextQuestionTimer);
+        measurementNextQuestionTimer = null;
+      }
+    }
 
     function toggleRulerMode(e) {
       if (e) e.stopPropagation();
+      cancelMeasurementNextQuestion();
       if (hoverTimer) {
         clearInterval(hoverTimer);
         hoverTimer = null;
@@ -1383,6 +1392,14 @@
     }
 
     function startRulerMeasurement() {
+      cancelMeasurementNextQuestion();
+      rulerLength = 1;
+      measurementComplete = false;
+      document.getElementById('tapeArena').classList.remove('measurement-complete');
+      document.getElementById('measureFeedback').textContent = '✨ 量好了！';
+      document.getElementById('rulerFooterHint').textContent =
+        '📏 尺子最多 20 格；黑線到達物品末端就量好了！';
+
       const page = explorePages[Math.floor(Math.random() * explorePages.length)];
       const item = Math.random() < 0.5 ? page.itemA : page.itemB;
       if (!measurementObjectBounds[item.imgSrc]) {
@@ -1391,7 +1408,6 @@
 
       measurementTargetItem = item;
       measurementTargetLength = 5 + Math.floor(Math.random() * 11);
-      measurementComplete = false;
 
       const image = document.getElementById('measureTargetImage');
       image.alt = item.name;
@@ -1442,6 +1458,12 @@
       }
       playDingLong();
       speakCantonese("量好了");
+      measurementNextQuestionTimer = setTimeout(() => {
+        measurementNextQuestionTimer = null;
+        if (!measurementModeActive || !measurementComplete) return;
+        startRulerMeasurement();
+        updateRuler();
+      }, 3000);
     }
 
     function renderRulerGridAndMarks() {
@@ -1577,6 +1599,7 @@
         clearInterval(hoverTimer);
         hoverTimer = null;
       }
+      cancelMeasurementNextQuestion();
       rulerLength = 1;
       measurementComplete = false;
       document.getElementById('tapeArena').classList.remove('measurement-complete');
