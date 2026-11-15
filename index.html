@@ -936,7 +936,7 @@
       </div>
 
       <div style="font-size: 1.15rem; font-weight: 900; color: #FFFFFF;" id="trainBottomHint">
-        🔔 按一下任何地方，火車就會駛到尾卡對齊左邊，再停留 3 秒。
+        🔔 按一下、兩指、三指或撥動任何地方，火車就會駛到尾卡對齊左邊，再停留 3 秒。
       </div>
     </div>
   </section>
@@ -1747,8 +1747,8 @@
       image.src = currentTrainAsset.src;
       if (image.complete && image.naturalWidth) layoutTrainAtStart();
 
-      label.textContent = '按一下，火車出發！';
-      hint.textContent = `🔔 ${currentTrainAsset.name}已在起點準備好，按任何地方出發！`;
+      label.textContent = '按一下、兩指、三指或撥動，火車出發！';
+      hint.textContent = `🔔 ${currentTrainAsset.name}已在起點準備好，按一下、兩指、三指或撥動任何地方都能出發！`;
     }
 
     function layoutTrainAtStart() {
@@ -1805,8 +1805,45 @@
       stopTrainSounds();
     }
 
+    let trainGestureStart = null;
+
     function handleTrainStageClick() {
       triggerTrainMove();
+    }
+
+    function handleTrainGestureStart(event) {
+      const trainModule = document.getElementById('moduleTrain');
+      if (!trainModule || !trainModule.classList.contains('active')) return;
+
+      const touchCount = event.touches ? event.touches.length : 0;
+      if (touchCount >= 2) {
+        event.preventDefault();
+        triggerTrainMove();
+        return;
+      }
+
+      const touch = event.touches && event.touches[0] ? event.touches[0] : event;
+      trainGestureStart = { x: touch.clientX, y: touch.clientY };
+    }
+
+    function handleTrainGestureEnd(event) {
+      if (!trainGestureStart) return;
+      const trainModule = document.getElementById('moduleTrain');
+      if (!trainModule || !trainModule.classList.contains('active')) return;
+
+      const touch = event.changedTouches && event.changedTouches[0]
+        ? event.changedTouches[0]
+        : event;
+      const deltaX = touch.clientX - trainGestureStart.x;
+      const deltaY = touch.clientY - trainGestureStart.y;
+      const isSwipe = Math.abs(deltaX) > 35 || Math.abs(deltaY) > 35;
+
+      if (isSwipe) {
+        event.preventDefault();
+        triggerTrainMove();
+      }
+
+      trainGestureStart = null;
     }
 
     function triggerTrainMove() {
@@ -1885,6 +1922,14 @@
       const trainStage = document.getElementById('trainStageContainer');
       if (trainStage) {
         trainStage.addEventListener('click', handleTrainStageClick);
+        trainStage.addEventListener('touchstart', handleTrainGestureStart, { passive: false });
+        trainStage.addEventListener('touchend', handleTrainGestureEnd, { passive: false });
+        trainStage.addEventListener('touchmove', (event) => {
+          if (event.touches && event.touches.length >= 2) {
+            event.preventDefault();
+            triggerTrainMove();
+          }
+        }, { passive: false });
       }
     });
   </script>
