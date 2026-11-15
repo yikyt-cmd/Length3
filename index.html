@@ -242,6 +242,7 @@
 
     .comparison-arena.mode-side-by-side .item-card {
       flex: 1;
+      min-width: 0;
       border-radius: 24px;
       padding: 14px;
       display: flex;
@@ -262,6 +263,7 @@
       align-items: center;
       justify-content: center;
       width: 100%;
+      min-width: 0;
       min-height: 0;
     }
 
@@ -284,7 +286,8 @@
     }
 
     .comparison-arena.mode-side-by-side .real-item-img {
-      width: 50vw;
+      width: 100%;
+      max-width: 100%;
       height: auto;
       object-fit: contain;
     }
