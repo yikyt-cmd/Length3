@@ -790,17 +790,17 @@
     }
   </style>
 </head>
-<body>
+<body class="controls-hidden">
 
   <button
     type="button"
     class="controls-visibility-toggle"
     id="controlsVisibilityToggle"
     onclick="toggleControlsVisibility(event)"
-    aria-label="收起所有按鈕"
-    aria-expanded="true"
-    title="收起所有按鈕"
-  >收起</button>
+    aria-label="顯示所有按鈕"
+    aria-expanded="false"
+    title="顯示所有按鈕"
+  >顯示</button>
 
   <!-- 頂部主模組切換 -->
   <header class="top-nav-bar">
@@ -1106,10 +1106,10 @@
       window.speechSynthesis.speak(u);
     }
 
-    function toggleControlsVisibility(e) {
-      if (e) e.stopPropagation();
-      const controlsHidden = document.body.classList.toggle('controls-hidden');
+    function applyControlsVisibilityState(controlsHidden) {
+      document.body.classList.toggle('controls-hidden', controlsHidden);
       const toggle = document.getElementById('controlsVisibilityToggle');
+      if (!toggle) return;
       const label = controlsHidden ? '顯示' : '收起';
       const accessibleLabel = controlsHidden ? '顯示所有按鈕' : '收起所有按鈕';
       toggle.textContent = label;
@@ -1117,6 +1117,14 @@
       toggle.setAttribute('title', accessibleLabel);
       toggle.setAttribute('aria-expanded', String(!controlsHidden));
     }
+
+    function toggleControlsVisibility(e) {
+      if (e) e.stopPropagation();
+      const controlsHidden = document.body.classList.toggle('controls-hidden');
+      applyControlsVisibilityState(controlsHidden);
+    }
+
+    applyControlsVisibilityState(true);
 
     /* ==========================================
        3. 模組切換（長短圖卡 vs 全頁拉尺 vs 火車）
