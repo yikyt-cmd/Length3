@@ -653,7 +653,7 @@
     .train-stage {
       width: 100%;
       height: 98%;
-      background: #FFFFFF;
+      background: #000000;
       border-radius: 26px;
       border: 6px solid #10B981;
       box-shadow: 0 16px 36px rgba(16, 185, 129, 0.15);
@@ -669,9 +669,9 @@
     .train-status-card {
       font-size: 2.1rem;
       font-weight: 900;
-      color: #065F46;
-      background: #ECFDF5;
-      border: 4px solid #A7F3D0;
+      color: #FFFFFF;
+      background: transparent;
+      border: none;
       padding: 6px 32px;
       border-radius: 60px;
       pointer-events: none;
@@ -683,7 +683,7 @@
     }
 
     .train-status-text {
-      color: #047857;
+      color: #FFFFFF;
       font-size: 2.5rem;
     }
 
@@ -691,7 +691,7 @@
     .railway-arena {
       width: 100%;
       flex: 1;
-      background: linear-gradient(to bottom, #BAE6FD 0%, #E0F2FE 55%, #BBF7D0 55%, #86EFAC 100%);
+      background: #000000;
       border-radius: 20px;
       border: 5px solid #047857;
       position: relative;
@@ -699,7 +699,7 @@
       display: flex;
       align-items: flex-end;
       padding-bottom: 25px;
-      box-shadow: inset 0 6px 16px rgba(0,0,0,0.1);
+      box-shadow: none;
     }
 
     /* 站點指示柱 */
@@ -913,7 +913,6 @@
     <div class="train-stage" id="trainStageContainer">
       <!-- 火車播報看板 -->
       <div class="train-status-card">
-        <span>火車廣播：</span>
         <span class="train-status-text" id="trainStatusLabel">按一下，火車出發！</span>
       </div>
 
@@ -936,7 +935,7 @@
         </div>
       </div>
 
-      <div style="font-size: 1.15rem; font-weight: 900; color: #065F46;" id="trainBottomHint">
+      <div style="font-size: 1.15rem; font-weight: 900; color: #FFFFFF;" id="trainBottomHint">
         🔔 按一下任何地方，火車就會駛到尾卡對齊左邊，再停留 3 秒。
       </div>
     </div>
