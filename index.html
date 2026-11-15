@@ -116,13 +116,14 @@
     .mode-sub-btn {
       border: none;
       background: transparent;
-      padding: 6px 14px;
+      padding: 6px 10px;
       border-radius: 16px;
       font-size: 1rem;
       font-weight: 900;
       color: #475569;
       cursor: pointer;
       transition: 0.2s;
+      white-space: nowrap;
     }
 
     .mode-sub-btn.active {
@@ -762,6 +763,7 @@
         <div class="mode-toggle-group">
           <button class="mode-sub-btn active" id="btnModeStacked" onclick="setExploreMode('stacked')">上下對齊</button>
           <button class="mode-sub-btn" id="btnModeSide" onclick="setExploreMode('side-by-side')">左右兩邊</button>
+          <button class="mode-sub-btn" id="btnModeRandom" onclick="setExploreMode('random')" aria-label="左右隨機擺放">左右隨機</button>
         </div>
 
         <button class="page-nav-btn" onclick="prevExplorePage()" onmouseover="playHoverTick()">⬅️ 上一頁</button>
@@ -1042,6 +1044,7 @@
        ========================================== */
     let exploreMode = 'stacked';
     let currentExploreIndex = 0;
+    let displayedExploreItems;
 
     const explorePages = [
       {
@@ -1147,34 +1150,47 @@
       const arena = document.getElementById('compareArena');
       document.getElementById('btnModeStacked').classList.toggle('active', mode === 'stacked');
       document.getElementById('btnModeSide').classList.toggle('active', mode === 'side-by-side');
+      document.getElementById('btnModeRandom').classList.toggle('active', mode === 'random');
 
       if (mode === 'stacked') {
         arena.className = 'comparison-arena mode-stacked';
         speakCantonese("上下對齊模式");
       } else {
         arena.className = 'comparison-arena mode-side-by-side';
-        speakCantonese("左右兩邊模式");
+        if (mode === 'random') {
+          speakCantonese("左右隨機擺放模式");
+        } else {
+          speakCantonese("左右兩邊模式");
+        }
       }
       renderExplorePage();
     }
 
     function renderExplorePage() {
       const data = explorePages[currentExploreIndex];
+      const items = exploreMode === 'random' && Math.random() < 0.5
+        ? [data.itemB, data.itemA]
+        : [data.itemA, data.itemB];
+      const [itemA, itemB] = items;
+      displayedExploreItems = { A: itemA, B: itemB };
       const imageClass = data.theme === "湯匙" ? "real-item-img spoon-item-img" : "real-item-img";
       document.getElementById('explorePageLabel').textContent = data.title;
 
-      document.getElementById('nameA').textContent = data.itemA.name;
-      document.getElementById('iconA').textContent = data.itemA.icon;
-      document.getElementById('graphicA').innerHTML = `<img src="${data.itemA.imgSrc}" class="${imageClass}" alt="${data.itemA.name}">`;
+      document.getElementById('nameA').textContent = itemA.name;
+      document.getElementById('iconA').textContent = itemA.icon;
+      document.getElementById('graphicA').innerHTML = `<img src="${itemA.imgSrc}" class="${imageClass}" alt="${itemA.name}">`;
+      document.getElementById('badgeA').textContent = itemA.type === "long" ? "長" : "短";
+      document.getElementById('badgeA').className = `result-badge badge-${itemA.type}`;
 
-      document.getElementById('nameB').textContent = data.itemB.name;
-      document.getElementById('iconB').textContent = data.itemB.icon;
-      document.getElementById('graphicB').innerHTML = `<img src="${data.itemB.imgSrc}" class="${imageClass}" alt="${data.itemB.name}">`;
+      document.getElementById('nameB').textContent = itemB.name;
+      document.getElementById('iconB').textContent = itemB.icon;
+      document.getElementById('graphicB').innerHTML = `<img src="${itemB.imgSrc}" class="${imageClass}" alt="${itemB.name}">`;
+      document.getElementById('badgeB').textContent = itemB.type === "long" ? "長" : "短";
+      document.getElementById('badgeB').className = `result-badge badge-${itemB.type}`;
     }
 
     function handleCardHover(target) {
-      const data = explorePages[currentExploreIndex];
-      const item = target === 'A' ? data.itemA : data.itemB;
+      const item = displayedExploreItems[target];
       if (item.type === 'long') {
         playDingLong();
         speakCantonese(item.speech || "長！");
