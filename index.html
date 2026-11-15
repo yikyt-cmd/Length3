@@ -621,7 +621,7 @@
     }
 
     /* =========================================
-       模組三：神奇火車頭遊戲（超大火車、左對齊最後一卡、短5卡/長15卡）
+       模組三：神奇火車頭遊戲（短火車與10卡長火車）
        ========================================= */
     .train-stage {
       width: 100%;
@@ -732,9 +732,6 @@
     }
 
     .station-flag.start { left: 24px; }
-    .station-flag.mid { left: 50%; transform: translateX(-50%); }
-    .station-flag.end { right: 24px; }
-
     .flag-bubble {
       background: #FFFFFF;
       border: 3px solid #0F172A;
@@ -755,6 +752,7 @@
     }
 
     .station-line.start-line {
+      left: 24px;
       border-left: 5px solid #EF4444; /* 紅色起點對齊線 */
     }
 
@@ -779,67 +777,34 @@
       background: #D97706;
     }
 
-    /* 火車總成：左邊對齊最後一卡車廂（尾卡固定在 left: 24px 起點線） */
+    /* 裁切區從尾卡起點線開始，隱藏列車在起步位置左側的車身。 */
+    .train-reveal-area {
+      position: absolute;
+      left: 24px;
+      right: 24px;
+      top: 0;
+      bottom: 0;
+      overflow: hidden;
+      z-index: 5;
+      pointer-events: none;
+    }
+
     .train-assembly {
       position: absolute;
       bottom: 24px;
-      left: 24px;
-      display: flex;
-      align-items: flex-end;
-      z-index: 5;
-      cursor: pointer;
+      left: 0;
+      overflow: hidden;
       transform: translateX(0);
       will-change: transform;
     }
 
-    .train-assembly:not(.moving):hover .locomotive-body {
-      filter: drop-shadow(0 0 18px #F59E0B);
-      transform: scale(1.03);
-    }
-
-    .cars-container {
-      display: flex;
-      align-items: flex-end;
-      gap: 5px;
-    }
-
-    .train-car-svg {
-      flex-shrink: 0;
-      width: 86px;
-      height: 64px;
-    }
-
-    .locomotive-body {
-      flex-shrink: 0;
-      margin-left: 5px;
-      position: relative;
-      transition: transform 0.2s;
-    }
-
-    .locomotive-body svg {
-      width: 136px;
-      height: 94px;
-      display: block;
-    }
-
-    /* 蒸氣動畫 */
-    .steam-puff {
+    .train-picture {
       position: absolute;
-      top: -38px;
-      right: 30px;
-      font-size: 2.8rem;
-      opacity: 0;
-      pointer-events: none;
-      z-index: 12;
-    }
-
-    .anim-puff {
-      animation: smokeRise 0.9s infinite ease-out;
-    }
-
-    @keyframes smokeRise {
-      0% { transform: translateY(0) scale(0.6); opacity: 0.95; }
-      100% { transform: translateY(-50px) scale(2); opacity: 0; }
+      left: 0;
+      max-width: none;
+      display: block;
+      transform: scaleX(-1);
+      transform-origin: center;
     }
   </style>
 </head>
@@ -854,7 +819,7 @@
       📏 神奇拉尺（撥動/多指）
     </button>
     <button class="nav-btn" id="btnNavTrain" onclick="switchModule('train')" onmouseover="playHoverTick()">
-      🚂 神奇火車頭（5卡 vs 15卡）
+      🚂 神奇火車頭（短火車 vs 10卡長火車）
     </button>
   </header>
 
@@ -950,16 +915,16 @@
   </section>
 
   <!-- ==============================================
-       模組三：神奇火車頭遊戲（火車加大、尾卡左對齊、短5卡/長15卡）
+       模組三：神奇火車頭遊戲（圖片火車、尾卡左對齊）
        ============================================== -->
   <section class="stage-container" id="moduleTrain">
     <div class="train-stage" id="trainStageContainer">
       <div class="train-top-bar">
-        <div class="train-title-pill">🚂 尾卡左對齊！按屏幕或移到火車頭開動！</div>
+        <div class="train-title-pill">🚂 按任何地方出發，尾卡對齊左邊！</div>
         <div class="train-mode-selector" onclick="event.stopPropagation()">
-          <button class="train-mode-btn active" id="btnModeAuto" onclick="setTrainDriveMode('alternate')">🔀 交替出發</button>
-          <button class="train-mode-btn" id="btnModeMid" onclick="setTrainDriveMode('short')">📍 短火車(5卡)</button>
-          <button class="train-mode-btn" id="btnModeEnd" onclick="setTrainDriveMode('long')">🏁 長火車(15卡)</button>
+            <button class="train-mode-btn active" id="btnModeAuto" onclick="setTrainDriveMode('alternate')">🔀 長短交替</button>
+            <button class="train-mode-btn" id="btnModeShort" onclick="setTrainDriveMode('short')">📍 短火車</button>
+            <button class="train-mode-btn" id="btnModeLong" onclick="setTrainDriveMode('long')">🏁 長火車(10卡)</button>
         </div>
         <button class="mini-reset-btn" onclick="resetTrain(event)" onmouseover="playHoverTick()">
           🔄 返起點
@@ -969,58 +934,30 @@
       <!-- 火車播報看板 -->
       <div class="train-status-card">
         <span>火車廣播：</span>
-        <span class="train-status-text" id="trainStatusLabel">嘟嘟～火車準備好！</span>
+        <span class="train-status-text" id="trainStatusLabel">按一下，火車出發！</span>
       </div>
 
       <!-- 鐵道全景 -->
       <div class="railway-arena" id="railwayArena">
         <!-- 站點指示 -->
         <div class="station-flag start">
-          <div class="flag-bubble" style="border-color:#EF4444; color:#B91C1C;">起點站（尾卡對齊處）🚩</div>
-          <div class="station-line start-line"></div>
+          <div class="flag-bubble" style="border-color:#EF4444; color:#B91C1C;">尾卡起點線 🚩</div>
         </div>
-        <div class="station-flag mid">
-          <div class="flag-bubble" style="border-color:#F59E0B; color:#B45309;">中間站（短火車）⏹️</div>
-          <div class="station-line" style="border-color: #F59E0B;"></div>
-        </div>
-        <div class="station-flag end">
-          <div class="flag-bubble" style="border-color:#10B981; color:#047857;">終點站（長火車）🏁</div>
-          <div class="station-line" style="border-color: #10B981;"></div>
-        </div>
+        <div class="station-line start-line"></div>
 
         <!-- 鐵軌 -->
         <div class="railway-track" id="railwayTrack"></div>
 
-        <!-- 火車總成：起點時最後一卡車廂對齊左側起點線 -->
-        <div class="train-assembly" id="trainAssembly" 
-             onmouseenter="handleTrainHover()" 
-             onclick="handleTrainStageClick(event)">
-
-          <!-- 車廂組合容器（動態渲染 5 卡或 15 卡） -->
-          <div class="cars-container" id="trainCarsContainer"></div>
-
-          <!-- 加大紅色火車頭 -->
-          <div class="locomotive-body" id="locomotiveBody">
-            <!-- 蒸氣效果 -->
-            <div class="steam-puff" id="steamPuff">💨</div>
-            <svg viewBox="0 0 140 95">
-              <rect x="100" y="5" width="18" height="24" fill="#1E293B" stroke="#0F172A" stroke-width="3"/>
-              <polygon points="94,5 124,5 116,14 102,14" fill="#DC2626"/>
-              <rect x="14" y="16" width="66" height="60" rx="6" fill="#EF4444" stroke="#B91C1C" stroke-width="3.5"/>
-              <rect x="74" y="30" width="54" height="46" rx="5" fill="#DC2626" stroke="#991B1B" stroke-width="3.5"/>
-              <rect x="24" y="24" width="34" height="24" rx="4" fill="#FEF08A" stroke="#CA8A04" stroke-width="2.5"/>
-              <circle cx="128" cy="52" r="9" fill="#FDE047" stroke="#EAB308" stroke-width="3"/>
-              <circle cx="42" cy="78" r="14" fill="#334155" stroke="#0F172A" stroke-width="4"/>
-              <circle cx="42" cy="78" r="6" fill="#94A3B8"/>
-              <circle cx="102" cy="78" r="14" fill="#334155" stroke="#0F172A" stroke-width="4"/>
-              <circle cx="102" cy="78" r="6" fill="#94A3B8"/>
-            </svg>
+        <!-- 左側裁切區：起步只顯示火車頭，駛入後逐漸露出車身 -->
+        <div class="train-reveal-area" id="trainRevealArea">
+          <div class="train-assembly" id="trainAssembly">
+            <img class="train-picture" id="trainPicture" alt="">
           </div>
         </div>
       </div>
 
       <div style="font-size: 1.15rem; font-weight: 900; color: #065F46;" id="trainBottomHint">
-        🔔 提示：短火車有 5 卡車廂；長火車有 15 卡車廂！尾卡對齊左邊起點！
+        🔔 按一下任何地方，火車就會駛到尾卡對齊左邊，再停留 3 秒。
       </div>
     </div>
   </section>
@@ -1145,9 +1082,8 @@
       } else if (mod === 'train') {
         document.getElementById('btnNavTrain').classList.add('active');
         document.getElementById('moduleTrain').classList.add('active');
-        initTrainCars();
-        resetTrain();
-        speakCantonese("神奇火車頭！尾卡對齊左邊起點！");
+        resetTrain(null, false);
+        speakCantonese("神奇火車頭！按任何地方，火車就出發！");
       }
     }
 
@@ -1599,47 +1535,50 @@
     }
 
     /* ==========================================
-       6. 模組三：神奇火車頭遊戲（加大尺寸、尾卡左對齊、短5卡/長15卡）
+       6. 模組三：圖片火車先露出車頭，駛入後尾卡對齊起點再離開
        ========================================= */
     let trainDriveMode = 'alternate';
     let nextTrainTarget = 'short';
     let isTrainMoving = false;
+    let currentTrainAsset = null;
+    let trainLayout = null;
+    let trainCycleId = 0;
+    let trainTimers = new Set();
+    let trainChugInterval = null;
 
-    const carPalette = [
-      { fill: '#3B82F6', stroke: '#1D4ED8', win: '#E0F2FE' },
-      { fill: '#10B981', stroke: '#047857', win: '#ECFDF5' },
-      { fill: '#F59E0B', stroke: '#B45309', win: '#FFFBEB' },
-      { fill: '#8B5CF6', stroke: '#6D28D9', win: '#EDE9FE' },
-      { fill: '#EC4899', stroke: '#BE185D', win: '#FCE7F3' },
-      { fill: '#06B6D4', stroke: '#0E7490', win: '#CFFAFE' }
-    ];
-
-    function createCarSvg(index) {
-      const col = carPalette[index % carPalette.length];
-      return `
-        <svg class="train-car-svg" viewBox="0 0 95 65">
-          <rect x="0" y="10" width="86" height="42" rx="7" fill="${col.fill}" stroke="${col.stroke}" stroke-width="3"/>
-          <rect x="10" y="16" width="24" height="18" rx="3" fill="${col.win}"/>
-          <rect x="48" y="16" width="24" height="18" rx="3" fill="${col.win}"/>
-          <circle cx="24" cy="54" r="8" fill="#334155" stroke="#0F172A" stroke-width="3"/>
-          <circle cx="62" cy="54" r="8" fill="#334155" stroke="#0F172A" stroke-width="3"/>
-          <rect x="85" y="28" width="10" height="6" fill="#475569"/>
-        </svg>
-      `;
-    }
-
-    function initTrainCars() {
-      const count = (trainDriveMode === 'long' || (trainDriveMode === 'alternate' && nextTrainTarget === 'long')) ? 15 : 5;
-      renderCars(count);
-    }
-
-    function renderCars(carCount) {
-      const container = document.getElementById('trainCarsContainer');
-      container.innerHTML = '';
-      for (let i = 0; i < carCount; i++) {
-        container.innerHTML += createCarSvg(i);
+    // These PNGs have transparent canvas padding; cropTop/cropHeight are visible-pixel bounds.
+    const trainAssets = {
+      long: {
+        src: 'train_10_cars (1).png',
+        name: '長火車（10卡）',
+        voice: '長火車',
+        cropTop: 529,
+        cropHeight: 101,
+        tailRight: 2672,
+        headFraction: 0.11,
+        verticalScale: 2.2
+      },
+      shortModern: {
+        src: 'train_1_car_modern.png',
+        name: '短火車（現代款）',
+        voice: '短火車',
+        cropTop: 377,
+        cropHeight: 425,
+        tailRight: 2646,
+        headFraction: 0.18,
+        verticalScale: 1
+      },
+      shortVintage: {
+        src: 'train_1_car_vintage.png',
+        name: '短火車（復古款）',
+        voice: '短火車',
+        cropTop: 324,
+        cropHeight: 494,
+        tailRight: 2665,
+        headFraction: 0.18,
+        verticalScale: 1
       }
-    }
+    };
 
     function renderRailwayTrack() {
       const track = document.getElementById('railwayTrack');
@@ -1651,22 +1590,106 @@
       }
     }
 
-    function setTrainDriveMode(mode) {
-      if (isTrainMoving) return;
-      trainDriveMode = mode;
-      document.getElementById('btnModeAuto').classList.toggle('active', mode === 'alternate');
-      document.getElementById('btnModeMid').classList.toggle('active', mode === 'short');
-      document.getElementById('btnModeEnd').classList.toggle('active', mode === 'long');
-      resetTrain();
-      if (mode === 'short') {
-        renderCars(5);
-        speakCantonese("短火車模式，有五卡車廂，去中間站！");
-      } else if (mode === 'long') {
-        renderCars(15);
-        speakCantonese("長火車模式，有十五卡車廂，去終點站！");
-      } else {
-        speakCantonese("交替出發模式！尾卡對齊左邊起點！");
+    function chooseTrainAsset() {
+      const target = trainDriveMode === 'alternate' ? nextTrainTarget : trainDriveMode;
+      if (target === 'long') return trainAssets.long;
+      return Math.random() < 0.5 ? trainAssets.shortModern : trainAssets.shortVintage;
+    }
+
+    function prepareTrainForRun() {
+      isTrainMoving = false;
+      trainLayout = null;
+      currentTrainAsset = chooseTrainAsset();
+
+      const train = document.getElementById('trainAssembly');
+      const image = document.getElementById('trainPicture');
+      const label = document.getElementById('trainStatusLabel');
+      const hint = document.getElementById('trainBottomHint');
+
+      train.style.transition = 'none';
+      train.style.transform = 'translateX(0px)';
+      train.style.visibility = 'hidden';
+      image.alt = currentTrainAsset.name;
+      image.onload = () => {
+        if (image.dataset.assetSrc === currentTrainAsset.src) layoutTrainAtStart();
+      };
+      image.onerror = () => {
+        console.error(`Unable to load train image: ${currentTrainAsset.src}`);
+        label.textContent = '火車圖片載入失敗';
+        hint.textContent = `找不到圖片：${currentTrainAsset.src}`;
+        trainLayout = null;
+        train.style.visibility = 'hidden';
+      };
+      image.dataset.assetSrc = currentTrainAsset.src;
+      image.src = currentTrainAsset.src;
+      if (image.complete && image.naturalWidth) layoutTrainAtStart();
+
+      label.textContent = '按一下，火車出發！';
+      hint.textContent = `🔔 ${currentTrainAsset.name}已在起點準備好，按任何地方出發！`;
+    }
+
+    function layoutTrainAtStart() {
+      if (!currentTrainAsset) return;
+
+      const arena = document.getElementById('railwayArena');
+      const revealArea = document.getElementById('trainRevealArea');
+      const train = document.getElementById('trainAssembly');
+      const image = document.getElementById('trainPicture');
+      if (!image.naturalWidth || !revealArea.clientWidth || !arena.clientHeight) return;
+
+      const availableWidth = revealArea.clientWidth;
+      const longTrain = currentTrainAsset === trainAssets.long;
+      const width = longTrain ? availableWidth : availableWidth * 0.42;
+      const scale = width / image.naturalWidth;
+      const imageHeight = image.naturalHeight * scale * currentTrainAsset.verticalScale;
+      const trainHeight = currentTrainAsset.cropHeight * scale * currentTrainAsset.verticalScale;
+      const headWidth = width * currentTrainAsset.headFraction;
+      const tailOffset = width * (1 - currentTrainAsset.tailRight / image.naturalWidth);
+      const arrivalDistance = Math.max(0, width - headWidth - tailOffset);
+
+      train.style.width = `${width}px`;
+      train.style.height = `${trainHeight}px`;
+      train.style.left = `${-width + headWidth}px`;
+      train.style.bottom = '24px';
+      train.style.transform = 'translateX(0px)';
+      train.style.visibility = 'visible';
+      image.style.width = `${width}px`;
+      image.style.height = `${imageHeight}px`;
+      image.style.top = `${-currentTrainAsset.cropTop * scale * currentTrainAsset.verticalScale}px`;
+      trainLayout = { width, headWidth, tailOffset, arrivalDistance };
+    }
+
+    function scheduleTrainStep(callback, delay, cycleId) {
+      const timer = setTimeout(() => {
+        trainTimers.delete(timer);
+        if (cycleId === trainCycleId) callback();
+      }, delay);
+      trainTimers.add(timer);
+    }
+
+    function stopTrainSounds() {
+      if (trainChugInterval !== null) {
+        clearInterval(trainChugInterval);
+        trainChugInterval = null;
       }
+    }
+
+    function cancelTrainCycle() {
+      trainCycleId++;
+      trainTimers.forEach(clearTimeout);
+      trainTimers.clear();
+      stopTrainSounds();
+    }
+
+    function setTrainDriveMode(mode) {
+      if (isTrainMoving || !['alternate', 'short', 'long'].includes(mode)) return;
+      trainDriveMode = mode;
+      if (mode === 'alternate') nextTrainTarget = 'short';
+      document.getElementById('btnModeAuto').classList.toggle('active', mode === 'alternate');
+      document.getElementById('btnModeShort').classList.toggle('active', mode === 'short');
+      document.getElementById('btnModeLong').classList.toggle('active', mode === 'long');
+      prepareTrainForRun();
+      speakCantonese(mode === 'short' ? '短火車模式' : mode === 'long' ? '長火車模式' : '長短交替模式');
     }
 
     function handleTrainStageClick(e) {
@@ -1674,103 +1697,60 @@
       triggerTrainMove();
     }
 
-    function handleTrainHover() {
-      if (isTouchUser) return;
-      triggerTrainMove();
-    }
-
     function triggerTrainMove() {
-      if (isTrainMoving) return;
+      if (isTrainMoving || !trainLayout || !currentTrainAsset) return;
 
-      const arena = document.getElementById('railwayArena');
       const train = document.getElementById('trainAssembly');
-      const puff = document.getElementById('steamPuff');
       const label = document.getElementById('trainStatusLabel');
       const hint = document.getElementById('trainBottomHint');
-      const arenaWidth = arena.clientWidth;
-
       isTrainMoving = true;
-      train.classList.add('moving');
-      puff.classList.add('anim-puff');
-      hint.textContent = "⏳ 火車行駛中...請稍候！停定後先可以開下一班！";
-
-      let target = trainDriveMode;
+      const cycleId = ++trainCycleId;
+      const longTrain = currentTrainAsset === trainAssets.long;
       if (trainDriveMode === 'alternate') {
-        target = nextTrainTarget;
-        nextTrainTarget = (nextTrainTarget === 'short') ? 'long' : 'short';
+        nextTrainTarget = nextTrainTarget === 'short' ? 'long' : 'short';
       }
 
-      playTrainWhistle(target === 'long');
+      train.style.transition = 'transform 2.6s cubic-bezier(0.25, 1, 0.5, 1)';
+      train.style.transform = `translateX(${trainLayout.arrivalDistance}px)`;
+      label.textContent = `${currentTrainAsset.name}出發！`;
+      hint.textContent = '⏳ 火車行駛中，直到最後一卡對齊左邊起點線！';
+      playTrainWhistle(longTrain);
       playChugSound();
-      let chugInterval = setInterval(playChugSound, 280);
+      trainChugInterval = setInterval(playChugSound, 280);
 
-      if (target === 'short') {
-        renderCars(5);
-        label.textContent = "短火車出發...前往中間站！";
+      scheduleTrainStep(() => {
+        stopTrainSounds();
+        train.style.transition = 'none';
+        train.style.transform = `translateX(${trainLayout.arrivalDistance}px)`;
+        label.textContent = `${currentTrainAsset.name}到達！`;
+        hint.textContent = '✨ 尾卡已對齊左邊，停留 3 秒！';
+        playDingLong();
+        speakCantonese(currentTrainAsset.voice);
 
-        const moveDist = (arenaWidth / 2) - 150;
-        train.style.transition = "transform 2.2s cubic-bezier(0.25, 1, 0.5, 1)";
-        train.style.transform = `translateX(${Math.max(80, moveDist)}px)`;
+        scheduleTrainStep(() => {
+          const revealWidth = document.getElementById('trainRevealArea').clientWidth;
+          const leaveDistance = trainLayout.arrivalDistance + revealWidth + trainLayout.width;
+          train.style.transition = 'transform 1.8s linear';
+          train.style.transform = `translateX(${leaveDistance}px)`;
+          label.textContent = `${currentTrainAsset.name}向右駛走！`;
+          hint.textContent = '🚂 火車向右方駛走...';
 
-        setTimeout(() => {
-          clearInterval(chugInterval);
-          puff.classList.remove('anim-puff');
-          playTrainWhistle(false);
-          label.textContent = "短火車！停在中間站！";
-          speakCantonese("短火車！五卡車廂，呢架係短火車！");
-
-          setTimeout(() => {
+          scheduleTrainStep(() => {
             isTrainMoving = false;
-            train.classList.remove('moving');
-            hint.textContent = "✅ 短火車已停妥！按屏幕或移到火車頭開下一班！";
-          }, 1500);
-
-        }, 2250);
-
-      } else {
-        renderCars(15);
-        label.textContent = "長火車出發...前往終點站！";
-
-        const moveDist = Math.max(160, arenaWidth * 0.45);
-        train.style.transition = "transform 3.2s cubic-bezier(0.25, 1, 0.5, 1)";
-        train.style.transform = `translateX(${moveDist}px)`;
-
-        setTimeout(() => {
-          clearInterval(chugInterval);
-          puff.classList.remove('anim-puff');
-          playTrainWhistle(true);
-          playDingLong();
-          label.textContent = "長火車！到達最右邊終點！";
-          speakCantonese("長火車！十五卡車廂，好長嘅火車！");
-
-          setTimeout(() => {
-            isTrainMoving = false;
-            train.classList.remove('moving');
-            hint.textContent = "✅ 長火車已停妥！按屏幕或移到火車頭開下一班！";
-          }, 2000);
-
-        }, 3250);
-      }
+            prepareTrainForRun();
+          }, 1800, cycleId);
+        }, 3000, cycleId);
+      }, 2600, cycleId);
     }
 
-    function resetTrain(e) {
+    function resetTrain(e, announce = true) {
       if (e) e.stopPropagation();
-      const train = document.getElementById('trainAssembly');
-      const puff = document.getElementById('steamPuff');
-      const label = document.getElementById('trainStatusLabel');
-      const hint = document.getElementById('trainBottomHint');
-
-      puff.classList.remove('anim-puff');
-      train.style.transition = "transform 0.6s ease-out";
-      train.style.transform = "translateX(0px)";
-
-      initTrainCars();
-      label.textContent = "嘟嘟～火車返到起點！";
-      hint.textContent = "🔔 提示：最後一卡對齊左邊起點！按屏幕或移到火車頭開動！";
-      playResetSound();
-      isTrainMoving = false;
-      train.classList.remove('moving');
-      speakCantonese("火車返到起點，尾卡對齊左邊！");
+      cancelTrainCycle();
+      prepareTrainForRun();
+      if (announce) {
+        playResetSound();
+        speakCantonese('火車返到起點，準備出發！');
+      }
     }
 
     window.addEventListener('touchmove', function(e) {
@@ -1781,6 +1761,8 @@
       renderRulerGridAndMarks();
       updateRuler();
       renderRailwayTrack();
+      if (isTrainMoving) resetTrain(null, false);
+      else layoutTrainAtStart();
     });
 
     window.addEventListener('DOMContentLoaded', () => {
@@ -1789,7 +1771,7 @@
       updateRuler();
       setupRulerInteractions();
       renderRailwayTrack();
-      initTrainCars();
+      prepareTrainForRun();
 
       const trainStage = document.getElementById('trainStageContainer');
       if (trainStage) {
